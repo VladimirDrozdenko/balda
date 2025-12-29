@@ -1,14 +1,14 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include <set>
+#include <unordered_set>
 #include <string>
 
 #include "dict.h"
 using namespace std;
 
-const size_t COLS = 5;
-const size_t ROWS = 5;
+const size_t COLS = 500;
+const size_t ROWS = 500;
 
 
 char pick_a_char() {
@@ -31,41 +31,44 @@ void fillMatrix(vector< vector<char> >& mtx, size_t rows, size_t cols) {
 }
 
 
-string get_cell_hash(int r, int c) {
-    return to_string(r) + to_string(c);
-}
+void resolve(const vector<vector<char>>& mtx,
+             TrieNode* node,
+             unordered_set<string>& results,
+             vector<vector<bool>>& visited,
+             int r,
+             int c,
+             string& word) {
 
-
-void resolve(const vector< vector<char> >& mtx,
-                   const Dictionary& dict, 
-                   set<string>& results,
-                   set<string>& visited_cells,
-                   int r, 
-                   int c, 
-                   string word) {
-
-    if (r < 0 || c < 0 || r >= mtx.size() || c >= mtx.size()) {
+    if (r < 0 || c < 0 ||
+        r >= static_cast<int>(mtx.size()) ||
+        c >= static_cast<int>(mtx[0].size())) {
         return;
     }
 
-    const string cell_hash = get_cell_hash(r, c);
-    if (visited_cells.find(cell_hash) != visited_cells.cend()) {
+    if (visited[r][c]) {
         return;
     }
 
-    word += mtx[r][c];
-    if (word.size() > 1 && dict.contains(word)) {
+    char ch = mtx[r][c];
+    TrieNode* next = node->children[ch - 'a'];
+    if (!next) {
+        return;
+    }
+
+    visited[r][c] = true;
+    word.push_back(ch);
+
+    if (next->is_word && word.size() > 1) {
         results.insert(word);
     }
 
-    visited_cells.insert(cell_hash);
+    resolve(mtx, next, results, visited, r - 1, c, word);
+    resolve(mtx, next, results, visited, r, c + 1, word);
+    resolve(mtx, next, results, visited, r + 1, c, word);
+    resolve(mtx, next, results, visited, r, c - 1, word);
 
-    resolve(mtx, dict, results, visited_cells, r - 1, c, word);
-    resolve(mtx, dict, results, visited_cells, r, c + 1, word);
-    resolve(mtx, dict, results, visited_cells, r + 1, c, word);
-    resolve(mtx, dict, results, visited_cells, r, c - 1, word);
-
-    visited_cells.erase(cell_hash);
+    word.pop_back();
+    visited[r][c] = false;
 }
 
 
@@ -82,14 +85,16 @@ int main() {
         cout << endl;
     }
 
-    set<string> words_in_matrix;
-    set<string> visited_cells;
+    unordered_set<string> words_in_matrix;
+    vector<vector<bool>> visited_cells(ROWS, vector<bool>(COLS, false));
+
+    string word;
 
     const size_t total = ROWS * COLS;
     for (int r = 0; r < matrix.size(); ++r) {
         for (int c = 0; c < matrix[r].size(); ++c) {
             cout << "\rProgress: " << ((c+1 + r*COLS)*100/total) << "%" << flush;
-            resolve(matrix, dict, words_in_matrix, visited_cells, r, c, string());
+            resolve(matrix, dict.root(), words_in_matrix, visited_cells, r, c, word);
         }
     }
     cout << endl;
