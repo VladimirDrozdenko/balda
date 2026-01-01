@@ -129,7 +129,8 @@ int main(int argc, char* argv[]) {
             resolve(matrix, dict.root(), words_in_matrix, visited_cells, r, c, word);
         }
     }
-    cout << endl;
+    cout << "\rDone evaluating " << ROWS << "x" << COLS 
+         << " matrix.\nFound the folloving words in the puzzle (sorted by length):\n" << endl;
 
     vector<string> words(
         words_in_matrix.begin(),
