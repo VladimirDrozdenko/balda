@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -7,9 +8,11 @@
 #include "dict.h"
 using namespace std;
 
-const size_t COLS = 500;
-const size_t ROWS = 500;
+const size_t DEFAULT_COLS = 10;
+const size_t DEFAULT_ROWS = 10;
 
+size_t COLS = 10;
+size_t ROWS = 10;
 
 char pick_a_char() {
     static std::mt19937 rng((unsigned)std::random_device{}());
@@ -71,8 +74,37 @@ void resolve(const vector<vector<char>>& mtx,
     visited[r][c] = false;
 }
 
+void parse_cmd_line(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-c") == 0) {
+            if (i + 1 >= argc) {
+                cerr << "Error: -c requires an integer argument\n";
+                exit(1);
+            }
+            COLS = strtol(argv[++i], nullptr, DEFAULT_COLS);
+        }
+        else if (strcmp(argv[i], "-r") == 0) {
+            if (i + 1 >= argc) {
+                cerr << "Error: -r requires an integer argument\n";
+                exit(1);
+            }
+            ROWS = strtol(argv[++i], nullptr, DEFAULT_ROWS);
+        }
+        else {
+            cerr << "Unknown argument: " << argv[i] << '\n';
 
-int main() {
+            cout << "\n" << argv[0] << " -c [columns] -r [rows]\n";
+            cout << "\n If not provided, the default values are columns=" 
+                << DEFAULT_COLS << " and rows=" << DEFAULT_ROWS << endl;
+            exit(1);
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+
+    parse_cmd_line(argc, argv);
+
     Dictionary dict("./english_words.txt");
 
     vector< vector<char> > matrix;
@@ -99,7 +131,17 @@ int main() {
     }
     cout << endl;
 
-    for (const auto& word : words_in_matrix) {
+    vector<string> words(
+        words_in_matrix.begin(),
+        words_in_matrix.end()
+    );
+
+    sort(words.begin(), words.end(),
+        [](const string& a, const string& b) {
+            return a.size() > b.size(); // longest → shortest
+        });
+
+    for (const auto& word : words) {
         cout << word << " ";
     }
     cout << endl;
